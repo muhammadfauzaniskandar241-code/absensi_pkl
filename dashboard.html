@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Absensi PKL</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f0f2f5;
+            min-height: 100vh;
+        }
+        .dashboard-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 500;
+            
+        }
+        .btn-action {
+            border-radius: 10px;
+            padding: 0.7rem 1.5rem;
+            font-weight: 500;
+        }
+        .table {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        .table th {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+        }
+        .attendance-form {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .nav-tabs {
+            border: none;
+            margin-bottom: 1rem;
+        }
+        .nav-tabs .nav-link {
+            border: none;
+            color: #6c757d;
+            padding: 0.7rem 1.5rem;
+            margin-right: 0.5rem;
+            border-radius: 10px;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: #1a73e8;
+            color: white;
+        }
+        .alert-custom {
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .btn-logout {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+        }
+        .btn-logout:hover {
+            background-color: #bb2d3b;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <span class="navbar-brand">Absensi PKL</span>
+            <div class="d-flex align-items-center">
+                <span class="me-3" id="nama-display"></span>
+                <button onclick="logout()" class="btn btn-logout">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="dashboard-card">
+                    <h4 class="mb-4">Absensi Hari Ini</h4>
+                    <div class="d-flex gap-3">
+                        <button id="absenMasukBtn" class="btn btn-success btn-action">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle me-2" viewBox="0 0 16 16">
+                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                                <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05"/>
+                            </svg>
+                            Absen Masuk
+                        </button>
+                        <button id="absenPulangBtn" class="btn btn-primary btn-action">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-right me-2" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z"/>
+                                <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
+                            </svg>
+                            Absen Pulang
+                        </button>
+                    </div>
+                    <div id="status" class="alert alert-custom mt-3" style="display: none;"></div>
+                </div>
+
+                <div class="dashboard-card">
+                    <h4 class="mb-4">Form Izin/Sakit</h4>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select id="statusIzin" class="form-select">
+                            <option value="izin">Izin</option>
+                            <option value="sakit">Sakit</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Keterangan</label>
+                        <textarea id="keterangan" class="form-control" rows="3" placeholder="Masukkan alasan izin/sakit..."></textarea>
+                    </div>
+                    <button id="submitIzin" class="btn btn-warning btn-action">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-send me-2" viewBox="0 0 16 16">
+                            <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07Zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493Z"/>
+                        </svg>
+                        Ajukan
+                    </button>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="dashboard-card">
+                    <h4 class="mb-4">Riwayat Presensi Mingguan</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="tabelMingguan">
+                            <thead>
+                                <tr>
+                                    <th>Hari</th>
+                                    <th>Status</th>
+                                    <th>Jam</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const nama = sessionStorage.getItem('nama');
+            if (!nama) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            document.getElementById('nama-display').textContent = nama;
+
+            // Fungsi absensi masuk
+            document.getElementById("absenMasukBtn").addEventListener("click", function() {
+                fetch('http://127.0.0.1:5000/absen', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nama_pkl: nama, masuk: true })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    showStatus(data.message, data.status);
+                    if (data.status === 'success') {
+                        refreshTable();
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+
+            // Fungsi absensi pulang
+            document.getElementById("absenPulangBtn").addEventListener("click", function() {
+                fetch('http://127.0.0.1:5000/absen', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nama_pkl: nama, pulang: true })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    showStatus(data.message, data.status);
+                    if (data.status === 'success') {
+                        refreshTable();
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+
+            // Fungsi submit izin/sakit
+            document.getElementById("submitIzin").addEventListener("click", function() {
+                const statusIzin = document.getElementById("statusIzin").value;
+                const keterangan = document.getElementById("keterangan").value;
+
+                if (!keterangan.trim()) {
+                    showStatus("Keterangan harus diisi!", "error");
+                    return;
+                }
+
+                fetch('http://127.0.0.1:5000/izin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nama_pkl: nama,
+                        status: statusIzin,
+                        keterangan: keterangan
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    showStatus(data.message, data.status);
+                    if (data.status === 'success') {
+                        document.getElementById("keterangan").value = '';
+                        refreshTable();
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+
+            function showStatus(message, type) {
+                const statusDiv = document.getElementById('status');
+                statusDiv.style.display = 'block';
+                statusDiv.style.marginTop = '1rem';
+                statusDiv.className = `alert alert-custom ${type === 'success' ? 'alert-success' : 'alert-danger'}`;
+                statusDiv.textContent = message;
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 3000);
+            }
+
+            function refreshTable() {
+                fetch("http://127.0.0.1:5000/absensi/mingguan", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ nama_pkl: nama })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        const tbody = document.querySelector("#tabelMingguan tbody");
+                        tbody.innerHTML = "";
+                        data.data.forEach(row => {
+                            const tr = document.createElement("tr");
+                            tr.innerHTML = `
+                                <td>${row.hari}<br><small class="text-muted">${row.tanggal}</small></td>
+                                <td><span class="badge ${getBadgeClass(row.status)}">${row.status}</span></td>
+                                <td>${formatJamColumn(row.jam_masuk, row.jam_pulang)}</td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    }
+                })
+                .catch(error => console.error("Gagal ambil data mingguan:", error));
+            }
+
+            function getBadgeClass(status) {
+                const statusMap = {
+                    'Hadir': 'bg-success',
+                    'Terlambat': 'bg-warning',
+                    'Izin': 'bg-info',
+                    'Sakit': 'bg-danger',
+                    'Belum Absen': 'bg-secondary',
+                    'Libur': 'bg-primary'
+                };
+                return statusMap[status] || 'bg-secondary';
+            }
+
+            function formatJamColumn(jamMasuk, jamPulang) {
+                if (!jamMasuk && !jamPulang) return '-';
+                let result = '';
+                if (jamMasuk) result += `<div>Masuk: ${jamMasuk}</div>`;
+                if (jamPulang) result += `<div>Pulang: ${jamPulang}</div>`;
+                return result;
+            }
+
+            // Initial table load
+            refreshTable();
+        });
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>
