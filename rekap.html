@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rekap Presensi</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    @media print {
+      form, button, .btn {
+        display: none !important;
+      }
+    }
+    </style>
+    <style>
+        .baris-libur {
+          background-color: #e0e0e0 !important;
+          color: #333 !important;
+        }
+      </style>
+</head>
+<body class="p-4">
+  <h3 class="text-center mb-4">Rekap Presensi Peserta PKL</h3>
+  <h4 class="text-center mb-4">Stasiun Bumi Parepare 2025/2026</h4>
+
+  <form id="filterForm" class="row g-3 mb-4">
+    <div class="col-md-3">
+      <label for="nama" class="form-label">Nama Peserta</label>
+      <select id="nama" class="form-select"></select>
+    </div>
+    <div class="col-md-3">
+      <label for="tanggalMulai" class="form-label">Mulai Tanggal</label>
+      <input type="date" id="tanggalMulai" class="form-control" />
+    </div>
+    <div class="col-md-3">
+      <label for="tanggalSampai" class="form-label">Sampai</label>
+      <input type="date" id="tanggalSampai" class="form-control" />
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+      <button type="submit" class="btn btn-primary w-100">Tampilkan Rekap</button>
+    </div>
+  </form>
+  
+  <div id="infoPeserta" class="mb-3" style="display: none;">
+    <p><strong>Nama:</strong> <span id="infoNama"></span></p>
+    <p><strong>Institusi:</strong> <span id="infoAsal"></span></p>
+    <p><strong>Jurusan:</strong> <span id="infoJurusan"></span></p>
+    <p><strong>Tanggal:</strong> <span id="infoTanggal"></span></p>
+  </div>
+
+  <div id="hasilRekap" style="display: none">
+    <h5 class="mt-4">Hasil Rekap</h5>
+    <table class="table table-bordered" id="tabelRekap">
+      <thead class="table-light">
+        <tr>
+          <th>Tanggal</th>
+          <th>Hari</th>
+          <th>Jam Masuk</th>
+          <th>Jam Pulang</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="mt-4">
+      <p><strong>Jumlah Hari :</strong> <span id="jumlahHariKerja">-</span></p>
+      <p><strong>Hadir:</strong> <span id="jumlahHadir">-</span> |
+         <strong>Terlambat:</strong> <span id="jumlahTerlambat">-</span> |
+         <strong>Absen:</strong> <span id="jumlahAbsen">-</span> |
+         <strong>Izin:</strong> <span id="jumlahIzin">-</span>
+      </p>
+    </div>
+
+    <div class="mt-5">
+      <p>Tanggal dibuat: <span id="tanggalRekap"></span></p>
+      <br><br>
+      <p><strong>Pembimbing</strong></p>
+      <br><br>
+      <p>__________________________</p>
+    </div>
+
+    <button class="btn btn-danger mt-3" onclick="window.print()">Cetak PDF</button>
+  </div>
+
+  <script src="rekap.js"></script>
+</body>
+</html>
