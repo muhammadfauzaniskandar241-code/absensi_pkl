@@ -22,6 +22,16 @@
 
         <div class="mt-4 border p-3 rounded">
             <h4>Form Izin/Sakit</h4>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Mulai (dari)</label>
+                    <input type="date" id="dari" class="form-control">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Sampai</label>
+                    <input type="date" id="sampai" class="form-control">
+                </div>
+            </div>
             <div class="mb-3">
                 <label class="form-label">Status</label>
                 <select id="statusIzin" class="form-select">
@@ -99,30 +109,45 @@
                 .catch(error => console.error('Error:', error));
             });
 
-            // Fungsi submit izin/sakit
+            // Fungsi submit izin/sakit (mendukung rentang tanggal dari/sampai)
             document.getElementById("submitIzin").addEventListener("click", function() {
                 const jenisIzin = document.getElementById("statusIzin").value;
                 const keterangan = document.getElementById("keterangan").value;
+                const dari = document.getElementById("dari").value;
+                const sampai = document.getElementById("sampai").value;
 
                 if (!keterangan.trim()) {
                     document.getElementById('status').innerText = "Keterangan harus diisi!";
                     return;
                 }
 
+                if ((dari && !sampai) || (!dari && sampai)) {
+                    document.getElementById('status').innerText = "Isi kedua tanggal atau kosongkan keduanya untuk hanya hari ini.";
+                    return;
+                }
+                if (dari && sampai && dari > sampai) {
+                    document.getElementById('status').innerText = "Tanggal mulai harus sebelum atau sama dengan tanggal selesai.";
+                    return;
+                }
+
+                const payload = { nama_pkl: nama, status: jenisIzin, keterangan: keterangan };
+                if (dari && sampai) {
+                    payload.dari = dari;
+                    payload.sampai = sampai;
+                }
+
                 fetch('http://127.0.0.1:5000/izin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        nama_pkl: nama,
-                        status: jenisIzin,
-                        keterangan: keterangan
-                    })
+                    body: JSON.stringify(payload)
                 })
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('status').innerText = data.message;
                     if (data.status === 'success') {
                         document.getElementById("keterangan").value = '';
+                        document.getElementById("dari").value = '';
+                        document.getElementById("sampai").value = '';
                         // Refresh tabel mingguan setelah berhasil submit izin
                         location.reload();
                     }

@@ -57,17 +57,51 @@
           <th>Jam Masuk</th>
           <th>Jam Pulang</th>
           <th>Status</th>
+          <th>Aksi</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
+
+    <!-- Modal Edit Status -->
+    <div class="modal fade" id="editStatusModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Edit Status Kehadiran</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="editStatusForm">
+              <input type="hidden" id="editTanggal">
+              <input type="hidden" id="editNama">
+              <div class="mb-3">
+                <label class="form-label">Ubah Status ke:</label>
+                <select class="form-select" id="editStatus">
+                  <option value="Sakit">Sakit</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Keterangan:</label>
+                <textarea class="form-control" id="editKeterangan" rows="3"></textarea>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-primary" id="btnSimpanStatus">Simpan</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="mt-4">
       <p><strong>Jumlah Hari :</strong> <span id="jumlahHariKerja">-</span></p>
       <p><strong>Hadir:</strong> <span id="jumlahHadir">-</span> |
          <strong>Terlambat:</strong> <span id="jumlahTerlambat">-</span> |
          <strong>Absen:</strong> <span id="jumlahAbsen">-</span> |
-         <strong>Izin:</strong> <span id="jumlahIzin">-</span>
+         <strong>Izin:</strong> <span id="jumlahIzin">-</span> |
+         <strong>Sakit:</strong> <span id="jumlahSakit">-</span>
       </p>
     </div>
 
@@ -81,7 +115,7 @@
 
     <button class="btn btn-danger mt-3" onclick="window.print()">Cetak PDF</button>
   </div>
-
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="rekap.js"></script>
 </body>
 </html>

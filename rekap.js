@@ -1,8 +1,39 @@
 document.addEventListener("DOMContentLoaded", function () {
+    // Initialize Bootstrap Modal
+    const editModal = new bootstrap.Modal(document.getElementById('editStatusModal'));
+    
+    // Handle Edit Status Button Click
+    document.getElementById('btnSimpanStatus').addEventListener('click', function() {
+        const tanggal = document.getElementById('editTanggal').value;
+        const nama = document.getElementById('editNama').value;
+        const status = document.getElementById('editStatus').value;
+        const keterangan = document.getElementById('editKeterangan').value;
+
+        fetch("http://127.0.0.1:5000/update-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                nama_pkl: nama,
+                tanggal: tanggal,
+                status: status,
+                keterangan: keterangan
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === "success") {
+                editModal.hide();
+                // Refresh the table
+                document.getElementById("filterForm").dispatchEvent(new Event('submit'));
+            } else {
+                alert(data.message);
+            }
+        });
+    });
     const namaSelect = document.getElementById("nama");
   
     // Fetch nama peserta untuk dropdown
-    fetch("http://10.2.1.200:5000/daftar-peserta")
+    fetch("http://127.0.0.1:5000/daftar-peserta")
       .then(res => res.json())
       .then(data => {
         data.forEach(p => {
@@ -20,7 +51,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const mulai = document.getElementById("tanggalMulai").value;
       const sampai = document.getElementById("tanggalSampai").value;
   
-      fetch("http://10.2.1.200:5000/rekap", {
+      fetch("http://127.0.0.1:5000/rekap", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nama_pkl: nama, dari: mulai, sampai: sampai })
@@ -37,7 +68,7 @@ document.addEventListener("DOMContentLoaded", function () {
           const tbody = document.querySelector("#tabelRekap tbody");
           tbody.innerHTML = "";
   
-          let total = 0, hadir = 0, terlambat = 0, absen = 0, izin = 0;
+          let total = 0, hadir = 0, terlambat = 0, absen = 0, izin = 0, sakit = 0;
   
           data.data.forEach(row => {
             const tr = document.createElement("tr");
@@ -45,7 +76,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (status === "libur") {
                 tr.classList.add("baris-libur");
-              }
+            }
+
+            const canEdit = status === "izin" || status === "absen"; // Allow editing only for these statuses
+            const editButton = canEdit ? `
+              <button class="btn btn-sm btn-outline-primary edit-status" 
+                data-tanggal="${row.tanggal}"
+                data-nama="${nama}">
+                Ubah Status
+              </button>` : '-';
 
             tr.innerHTML = `
               <td>${row.tanggal}</td>
@@ -53,14 +92,27 @@ document.addEventListener("DOMContentLoaded", function () {
               <td>${row.jam_masuk || '-'}</td>
               <td>${row.jam_pulang || '-'}</td>
               <td>${row.status}</td>
+              <td>${editButton}</td>
             `;
             tbody.appendChild(tr);
+
+            // Add click handler for edit button
+            const editBtn = tr.querySelector('.edit-status');
+            if (editBtn) {
+                editBtn.addEventListener('click', function() {
+                    document.getElementById('editTanggal').value = this.dataset.tanggal;
+                    document.getElementById('editNama').value = this.dataset.nama;
+                    document.getElementById('editKeterangan').value = '';
+                    editModal.show();
+                });
+            }
   
             total++;
             if (row.status === "hadir") hadir++;
             else if (row.status === "terlambat") terlambat++;
             else if (row.status === "absen") absen++;
             else if (row.status === "izin") izin++;
+            else if (row.status === "sakit") sakit++;
           });
   
           document.getElementById("jumlahHariKerja").textContent = total;
@@ -68,6 +120,7 @@ document.addEventListener("DOMContentLoaded", function () {
           document.getElementById("jumlahTerlambat").textContent = terlambat;
           document.getElementById("jumlahAbsen").textContent = absen;
           document.getElementById("jumlahIzin").textContent = izin;
+          document.getElementById("jumlahSakit").textContent = sakit;
           document.getElementById("tanggalRekap").textContent = new Date().toLocaleDateString("id-ID");
   
           document.getElementById("hasilRekap").style.display = "block";

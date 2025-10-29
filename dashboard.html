@@ -113,17 +113,20 @@
                 </div>
 
                 <div class="dashboard-card">
-                    <h4 class="mb-4">Form Izin/Sakit</h4>
-                    <div class="mb-3">
-                        <label class="form-label">Status</label>
-                        <select id="statusIzin" class="form-select">
-                            <option value="izin">Izin</option>
-                            <option value="sakit">Sakit</option>
-                        </select>
+                    <h4 class="mb-4">Form Izin</h4>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Mulai (dari)</label>
+                            <input type="date" id="dari" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Sampai</label>
+                            <input type="date" id="sampai" class="form-control">
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Keterangan</label>
-                        <textarea id="keterangan" class="form-control" rows="3" placeholder="Masukkan alasan izin/sakit..."></textarea>
+                        <textarea id="keterangan" class="form-control" rows="3" placeholder="Masukkan alasan izin..."></textarea>
                     </div>
                     <button id="submitIzin" class="btn btn-warning btn-action">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-send me-2" viewBox="0 0 16 16">
@@ -198,30 +201,46 @@
                 .catch(error => console.error('Error:', error));
             });
 
-            // Fungsi submit izin/sakit
+            // Fungsi submit izin/sakit (mendukung rentang tanggal dari/sampai)
             document.getElementById("submitIzin").addEventListener("click", function() {
-                const statusIzin = document.getElementById("statusIzin").value;
+                const statusIzin = 'izin';
                 const keterangan = document.getElementById("keterangan").value;
+                const dari = document.getElementById("dari").value;
+                const sampai = document.getElementById("sampai").value;
 
                 if (!keterangan.trim()) {
                     showStatus("Keterangan harus diisi!", "error");
                     return;
                 }
 
+                // Jika salah satu tanggal diisi, validasi kedua tanggal
+                if ((dari && !sampai) || (!dari && sampai)) {
+                    showStatus("Isi kedua tanggal atau kosongkan keduanya untuk hanya hari ini.", "error");
+                    return;
+                }
+                if (dari && sampai && dari > sampai) {
+                    showStatus("Tanggal mulai harus sebelum atau sama dengan tanggal selesai.", "error");
+                    return;
+                }
+
+                const payload = { nama_pkl: nama, status: statusIzin, keterangan: keterangan };
+                if (dari && sampai) {
+                    payload.dari = dari;
+                    payload.sampai = sampai;
+                }
+
                 fetch('http://127.0.0.1:5000/izin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        nama_pkl: nama,
-                        status: statusIzin,
-                        keterangan: keterangan
-                    })
+                    body: JSON.stringify(payload)
                 })
                 .then(response => response.json())
                 .then(data => {
                     showStatus(data.message, data.status);
                     if (data.status === 'success') {
                         document.getElementById("keterangan").value = '';
+                        document.getElementById("dari").value = '';
+                        document.getElementById("sampai").value = '';
                         refreshTable();
                     }
                 })

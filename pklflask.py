@@ -109,7 +109,7 @@ def absen():
     if hari_ini_record and hari_ini_record.get('status') and hari_ini_record['status'].lower() in ('izin', 'sakit'):
         # Khusus pesan ketika sudah mengajukan izin/sakit
         conn.close()
-        return jsonify({'status': 'error', 'message': 'Tidak bisa absen: kamu sudah mengajukan Izin/Sakit hari ini.'}), 409
+        return jsonify({'status': 'error', 'message': 'Tidak bisa absen: kamu sudah mengajukan Izin.'}), 409
 
     cursor.execute("SELECT * FROM tb_absenpkl WHERE nama_pkl = %s AND jam_masuk IS NOT NULL AND tanggal = %s", (nama, tanggal_hari_ini))
     absen_masuk = cursor.fetchone()
@@ -175,11 +175,14 @@ def izin():
         return jsonify({'status': 'error', 'message': 'Format request harus JSON!'}), 400
 
     nama = data.get('nama_pkl')
-    # Terima 'status' (recommended) atau fallback ke 'jenis' untuk kompatibilitas
-    status = data.get('status')  # 'izin' atau 'sakit' - used only to determine status value
+    # Status hanya bisa 'Izin' lewat endpoint ini
+    status = 'izin'
     keterangan = data.get('keterangan', '')
+    # Optional range: 'dari' and 'sampai' as YYYY-MM-DD
+    dari = data.get('dari')
+    sampai = data.get('sampai')
 
-    if not nama or not status:
+    if not nama:
         return jsonify({'status': 'error', 'message': 'Data tidak lengkap!'}), 400
 
     zona_wita = pytz.timezone('Asia/Makassar')
@@ -189,26 +192,68 @@ def izin():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
-        # Cek apakah sudah ada record absensi hari ini
-        cursor.execute("""
-            SELECT * FROM tb_absenpkl 
-            WHERE nama_pkl = %s AND DATE(tanggal) = %s
-        """, (nama, tanggal_hari_ini))
-        existing = cursor.fetchone()
 
-        if existing:
-            return jsonify({'status': 'error', 'message': 'Sudah melakukan absensi atau mengajukan Izin/Sakit hari ini!'}), 409
-
-        # Insert absensi dengan status Izin/Sakit
         status_value = status.capitalize()
-        cursor.execute("""
-            INSERT INTO tb_absenpkl (nama_pkl, tanggal, status, keterangan, jam_masuk, jam_pulang)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, (nama, tanggal_hari_ini, status_value, keterangan, '-', '-'))
 
-        conn.commit()
-        return jsonify({'status': 'success', 'message': f'Berhasil mengajukan {status}!'})
+        # helper untuk insert satu hari jika belum ada
+        def insert_for_date(target_date_str):
+            cursor.execute("""
+                SELECT 1 FROM tb_absenpkl
+                WHERE nama_pkl = %s AND DATE(tanggal) = %s
+            """, (nama, target_date_str))
+            if cursor.fetchone():
+                return False
+                
+            # Check if it's weekend
+            target_date = datetime.strptime(target_date_str, '%Y-%m-%d')
+            is_weekend = target_date.strftime('%A') in ['Saturday', 'Sunday']
+            actual_status = 'libur' if is_weekend else status_value
+            
+            cursor.execute("""
+                INSERT INTO tb_absenpkl (nama_pkl, tanggal, status, keterangan, jam_masuk, jam_pulang)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (nama, target_date_str, actual_status, keterangan, '-', '-'))
+            return True
+
+        inserted_dates = []
+        if dari and sampai:
+            # parse and validate date range
+            try:
+                start = datetime.strptime(dari, '%Y-%m-%d').date()
+                end = datetime.strptime(sampai, '%Y-%m-%d').date()
+            except Exception:
+                return jsonify({'status': 'error', 'message': 'Format tanggal tidak valid, gunakan YYYY-MM-DD'}), 400
+
+            if start > end:
+                return jsonify({'status': 'error', 'message': 'Tanggal mulai harus sebelum atau sama dengan tanggal selesai'}), 400
+
+            cur = start
+            while cur <= end:
+                target_str = cur.strftime('%Y-%m-%d')
+                if insert_for_date(target_str):
+                    inserted_dates.append(target_str)
+                cur = cur + timedelta(days=1)
+
+            conn.commit()
+            if not inserted_dates:
+                return jsonify({'status': 'error', 'message': 'Semua tanggal pada rentang sudah memiliki catatan.'}), 409
+            return jsonify({'status': 'success', 'message': f'Berhasil mengajukan {status} untuk {len(inserted_dates)} hari.', 'dates': inserted_dates})
+        else:
+            # single day (today)
+            target = tanggal_hari_ini
+            cursor.execute("""
+                SELECT 1 FROM tb_absenpkl 
+                WHERE nama_pkl = %s AND DATE(tanggal) = %s
+            """, (nama, target))
+            if cursor.fetchone():
+                return jsonify({'status': 'error', 'message': 'Sudah melakukan absensi atau mengajukan Izin/Sakit hari ini!'}), 409
+
+            cursor.execute("""
+                INSERT INTO tb_absenpkl (nama_pkl, tanggal, status, keterangan, jam_masuk, jam_pulang)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (nama, target, status_value, keterangan, '-', '-'))
+            conn.commit()
+            return jsonify({'status': 'success', 'message': f'Berhasil mengajukan {status}!'})
 
     except Exception as e:
         return jsonify({'status': 'error', 'message': f'Terjadi kesalahan: {str(e)}'})
@@ -222,8 +267,9 @@ def format_jam(value):
     if isinstance(value, str):
         return value[-8:] if len(value) >= 8 else value
     return value.strftime('%H:%M:%S')
-@app.route('/absensi/mingguan', methods=['POST'])
 
+
+@app.route('/absensi/mingguan', methods=['POST'])
 def absensi_mingguan():
     data = request.get_json()
     nama = data.get('nama_pkl')
@@ -238,9 +284,6 @@ def absensi_mingguan():
     start_of_week = now - timedelta(days=now.weekday())  # Senin minggu ini
     start_date = start_of_week.date()
     today = now.date()
-
-    tujuh_hari = (datetime.now(pytz.utc)
-                  .astimezone(pytz.timezone('Asia/Makassar')) - timedelta(days=6)).date()
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -353,6 +396,42 @@ def daftar_peserta():
     data = cursor.fetchall()
     conn.close()
     return jsonify(data)
+
+@app.route('/update-status', methods=['POST'])
+def update_status():
+    data = request.get_json()
+    if not data:
+        return jsonify({'status': 'error', 'message': 'Format request harus JSON!'}), 400
+
+    nama = data.get('nama_pkl')
+    tanggal = data.get('tanggal')
+    status = data.get('status')  # Harus 'Sakit'
+    keterangan = data.get('keterangan', '')
+
+    if not all([nama, tanggal, status]) or status != 'Sakit':
+        return jsonify({'status': 'error', 'message': 'Data tidak lengkap atau status tidak valid!'}), 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Update status dan keterangan
+        cursor.execute("""
+            UPDATE tb_absenpkl 
+            SET status = %s, keterangan = %s
+            WHERE nama_pkl = %s AND DATE(tanggal) = %s
+        """, (status, keterangan, nama, tanggal))
+        
+        if cursor.rowcount == 0:
+            return jsonify({'status': 'error', 'message': 'Data tidak ditemukan!'}), 404
+
+        conn.commit()
+        return jsonify({'status': 'success', 'message': f'Status berhasil diubah menjadi {status}!'})
+
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'Terjadi kesalahan: {str(e)}'}), 500
+    finally:
+        conn.close()
 
 @app.route('/', methods=['GET'])
 def home():
