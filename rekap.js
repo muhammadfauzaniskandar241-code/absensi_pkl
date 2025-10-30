@@ -92,6 +92,7 @@ document.addEventListener("DOMContentLoaded", function () {
               <td>${row.jam_masuk || '-'}</td>
               <td>${row.jam_pulang || '-'}</td>
               <td>${row.status}</td>
+              <td>${row.keterangan ? row.keterangan : '-'}</td>
               <td>${editButton}</td>
             `;
             tbody.appendChild(tr);

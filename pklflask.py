@@ -102,7 +102,7 @@ def absen():
     if not peserta:
         return jsonify({'status': 'error', 'message': 'Peserta PKL tidak ditemukan'})
 
-    # Cek apakah peserta sudah mengajukan Izin atau Sakit hari ini
+    # Cek apakah peserta sudah mengajukan Izin hari ini
     cursor.execute("SELECT status FROM tb_absenpkl WHERE nama_pkl = %s AND DATE(tanggal) = %s", (nama, tanggal_hari_ini))
     hari_ini_record = cursor.fetchone()
 
@@ -346,7 +346,7 @@ def rekap_peserta():
 
     cursor = get_db_connection().cursor()
     cursor.execute("""
-        SELECT tanggal, status, jam_masuk, jam_pulang
+        SELECT tanggal, status, jam_masuk, jam_pulang, keterangan
         FROM tb_absenpkl
         WHERE nama_pkl = %s AND DATE(tanggal) BETWEEN %s AND %s
         ORDER BY tanggal ASC
@@ -372,7 +372,8 @@ def rekap_peserta():
             'hari': hari,
             'status': r['status'],
             'jam_masuk': format_jam(r['jam_masuk']),
-            'jam_pulang': format_jam(r['jam_pulang'])
+            'jam_pulang': format_jam(r['jam_pulang']),
+            'keterangan': r['keterangan']
         })
 
     #return jsonify({'status': 'success', 'data': result})
